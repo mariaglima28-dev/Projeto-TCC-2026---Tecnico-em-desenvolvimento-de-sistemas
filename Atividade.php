@@ -1,4 +1,6 @@
 <?php
+require_once "../../conexao.php"; 
+
 require_once "../../Atividade.php";
 require_once "../../Aula.php";
 
@@ -16,9 +18,9 @@ $lista = $atividades->listar();
 </head>
 <body>
     <div class="menu">
-        <a href="turmas.php"><button type="submit">Turmas</button>
-        <a href="materias.php"><button type="submit">Matérias</button>
-        <a href="index.php"><button type="submit">Home</button>
+        <a href="turmas.php"><button>Turmas</button></a>
+        <a href="materias.php"><button>Matérias</button></a>
+        <a href="index.php"><button>Home</button></a>
     </div>
 
     <div class="todasAsTarefas">
