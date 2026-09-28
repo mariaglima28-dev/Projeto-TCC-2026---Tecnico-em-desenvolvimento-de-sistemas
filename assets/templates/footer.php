@@ -1,6 +1,9 @@
 </main>
 <footer>
-    <p><a href="sobreosite.php">"Desenvolvedores"</a> <?= date('Y'); ?></p>
+    <div class="footer">
+        <p>Desenvolvido por: Samuel Silva Tironi, Maria Gabriela Pieri de Lima e Danielle Alves Lima (<?= date('Y'); ?>)</p>
+    </div>
+    <script src="/maria/PROJETO/assets/js/perguntas.js"></script>
 </footer>
 </body>
 </html>
