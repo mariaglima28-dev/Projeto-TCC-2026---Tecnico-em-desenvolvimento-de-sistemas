@@ -60,7 +60,7 @@ CREATE TABLE `atividades` (
 
 CREATE TABLE `aulas` (
   `idAula` int(11) NOT NULL,
-  `idDiciplina` int(11) NOT NULL,
+  `idDisciplina` int(11) NOT NULL,
   `titulo` varchar(255) NOT NULL,
   `tema` varchar(255) NOT NULL,
   `descricao` varchar(255) NOT NULL,
@@ -103,8 +103,8 @@ CREATE TABLE `correcoes` (
 --
 
 CREATE TABLE `disciplinas` (
-  `idDiciplina` int(11) NOT NULL,
-  `diciplina` varchar(255) NOT NULL,
+  `idDisciplina` int(11) NOT NULL,
+  `disciplina` varchar(255) NOT NULL,
   `idProfessor` int(11) NOT NULL,
   `idTurma` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -288,7 +288,7 @@ ALTER TABLE `atividades`
 --
 ALTER TABLE `aulas`
   ADD PRIMARY KEY (`idAula`),
-  ADD KEY `idDiciplina` (`idDiciplina`);
+  ADD KEY `idDisciplina` (`idDisciplina`);
 
 --
 -- Índices de tabela `conquistas`
@@ -309,7 +309,7 @@ ALTER TABLE `correcoes`
 -- Índices de tabela `disciplinas`
 --
 ALTER TABLE `disciplinas`
-  ADD PRIMARY KEY (`idDiciplina`),
+  ADD PRIMARY KEY (`idDisciplina`),
   ADD KEY `idProfessor` (`idProfessor`),
   ADD KEY `idTurma` (`idTurma`);
 
@@ -411,7 +411,7 @@ ALTER TABLE `correcoes`
 -- AUTO_INCREMENT de tabela `disciplinas`
 --
 ALTER TABLE `disciplinas`
-  MODIFY `idDiciplina` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `idDisciplina` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT de tabela `instituicoes`
@@ -482,7 +482,7 @@ ALTER TABLE `atividades`
 -- Restrições para tabelas `aulas`
 --
 ALTER TABLE `aulas`
-  ADD CONSTRAINT `aulas_ibfk_1` FOREIGN KEY (`idDiciplina`) REFERENCES `disciplinas` (`idDiciplina`);
+  ADD CONSTRAINT `aulas_ibfk_1` FOREIGN KEY (`idDisciplina`) REFERENCES `disciplinas` (`idDisciplina`);
 
 --
 -- Restrições para tabelas `conquistas`
