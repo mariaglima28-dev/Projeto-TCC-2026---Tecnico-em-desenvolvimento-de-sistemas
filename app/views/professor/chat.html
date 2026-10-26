@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AprimorAI - Chat de Tutoria Inteligente</title>
+    <!-- Fontes Google: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked JS para renderização de Markdown nas respostas da IA -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#c0576f',
+                        'primary-hover': '#a8485e',
+                        secondary: '#8daec3',
+                        'secondary-hover': '#7398b0',
+                        'bg-main': '#ffe4c4',
+                        'bg-cream': '#fff8f0',
+                        'bg-card': '#ffffff',
+                        'bg-accent': '#daf0f2',
+                        'text-dark': '#2d3748',
+                        'text-muted': '#64748b',
+                        'border-color': '#f0e2d5'
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #c0576f;
+            --primary-hover: #a8485e;
+            --secondary: #8daec3;
+            --secondary-hover: #7398b0;
+            --bg-main: #ffe4c4;
+            --bg-card: #ffffff;
+            --bg-accent: #daf0f2;
+            --text-dark: #2d3748;
+            --text-muted: #64748b;
+            --border-color: #f0e2d5;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Banner Topo */
+        .banner-top {
+            height: 42px;
+            background-color: var(--secondary);
+        }
+
+        .banner-branco {
+            min-height: 82px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Aba Lateral Retrátil */
+        .aba-lateral {
+            position: fixed;
+            top: 0;
+            left: -380px;
+            width: 340px;
+            height: 100vh;
+            background-color: #fff1e0;
+            box-shadow: 8px 0 25px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .aba-lateral.aberta {
+            left: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 900;
+            transition: all 0.3s ease;
+        }
+
+        .overlay.ativo {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Estilo da Sanfona/Accordion */
+        .turma {
+            background: #c4e0e2;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+
+        .turma-header {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            color: #b9526f;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+        }
+
+        .turma-header:hover {
+            background: #8fc3c9;
+        }
+
+        .turma-conteudo {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.3s ease;
+            background-color: #daf0f2;
+            padding: 0 15px;
+        }
+
+        .turma.aberta .turma-conteudo {
+            max-height: 280px;
+            padding: 10px 15px;
+            overflow-y: auto;
+        }
+
+        /* Mensagens de Chat */
+        .chat-container {
+            scroll-behavior: smooth;
+        }
+
+        .chat-bubble-user {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            border-top-right-radius: 4px;
+        }
+
+        .chat-bubble-ai {
+            background-color: #daf0f2;
+            color: #1b494e;
+            border-top-left-radius: 4px;
+            border: 1px solid #c8e8ec;
+        }
+
+        /* Markdown styling dentro da mensagem da IA */
+        .markdown-body p {
+            margin-bottom: 0.75rem;
+            line-height: 1.6;
+        }
+
+        .markdown-body p:last-child {
+            margin-bottom: 0;
+        }
+
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3 {
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #11363a;
+        }
+
+        .markdown-body ul,
+        .markdown-body ol {
+            margin-left: 1.25rem;
+            margin-bottom: 0.75rem;
+            list-style-type: disc;
+        }
+
+        .markdown-body ol {
+            list-style-type: decimal;
+        }
+
+        .markdown-body code {
+            background: rgba(0, 0, 0, 0.06);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .markdown-body pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+            position: relative;
+        }
+
+        .markdown-body pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        /* Animação de Digitação */
+        .typing-dot {
+            animation: typingAnimation 1.4s infinite ease-in-out fill-mode-both;
+        }
+
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingAnimation {
+            0%, 80%, 100% {
+                transform: scale(0.6);
+                opacity: 0.4;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c0576f80;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c0576f;
+        }
+
+        .imagem-canto-esq, .imagem-canto-dir {
+            position: absolute;
+            bottom: 0;
+            width: 180px;
+            max-width: 25%;
+            height: auto;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .imagem-canto-esq { left: 0; }
+        .imagem-canto-dir { right: 0; }
+    </style>
+</head>
+
+<body class="bg-bg-main min-h-screen flex flex-col">
+
+    <!-- 1. Faixa Superior Colorida -->
+    <div class="banner-top flex items-center justify-between px-6 text-xs text-white font-semibold">
+        <div class="flex items-center space-x-2">
+        </div>
+        <div class="hidden sm:flex items-center space-x-4 opacity-90">
+
+        </div>
+    </div>
+
+    <!-- 2. Navbar / Banner Branco -->
+    <header class="banner-branco px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-40">
+        <div class="flex items-center space-x-3 sm:space-x-5">
+            <!-- Botão Menu Lateral -->
+            <button onclick="abrirAba()"
+                class="bg-primary hover:bg-primary-hover text-white px-3.5 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all transform hover:scale-105 flex items-center shadow-md">
+                <i class="fa-solid fa-bars mr-2"></i>
+                <span>Minhas Turmas</span>
+            </button>
+        </div>
+
+        <!-- Opções & Seletor de Matéria -->
+        <div class="flex items-center space-x-2 sm:space-x-4">
+            <!-- Botão Configurar Chave API -->
+            <button onclick="abrirModalChave()"
+                class="bg-rose-50 hover:bg-rose-100 text-primary border border-rose-200 text-xs sm:text-sm font-bold rounded-xl px-3 py-2 flex items-center space-x-1.5 transition shadow-sm">
+                <i class="fa-solid fa-key"></i>
+                <span class="hidden sm:inline">Chave API</span>
+            </button>
+
+            <!-- Seletor de Disciplina -->
+            <div class="relative">
+                <label for="subjectSelect" class="sr-only">Selecione a matéria</label>
+                <select id="subjectSelect" onchange="alterarMateria(this.value)"
+                    class="bg-bg-accent text-teal-900 border border-teal-200 text-xs sm:text-sm font-bold rounded-xl px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer shadow-sm appearance-none">
+                    <option value="Geral">🌐 Matéria: Geral</option>
+                    <option value="Matemática">📐 Matemática</option>
+                    <option value="Língua Portuguesa">✍️ Língua Portuguesa</option>
+                    <option value="Física">⚡ Física</option>
+                    <option value="Química">🧪 Química</option>
+                    <option value="Biologia">🧬 Biologia</option>
+                    <option value="História">🏛️ História</option>
+                    <option value="Geografia">🌍 Geografia</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-teal-700">
+                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Botões de Ação Rápida Chat -->
+            <button onclick="exportarChat()" title="Exportar Transcrição"
+                class="hidden sm:flex items-center justify-center w-9 h-9 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full transition shadow-sm">
+                <i class="fa-solid fa-download text-sm"></i>
+            </button>
+            <button onclick="limparChatAtual()" title="Limpar Conversa"
+                class="hidden sm:flex items-center justify-center w-9 h-9 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-full transition shadow-sm">
+                <i class="fa-solid fa-trash-can text-sm"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Modal de Configuração de Chave API -->
+    <div id="modalChave" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-100 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-key text-primary"></i> Configuração da API Gemini
+                </h3>
+                <button onclick="fecharModalChave()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+            </div>
+            <p class="text-xs text-slate-600">
+                Insira sua chave obtida gratuitamente no <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-primary underline font-semibold">Google AI Studio</a>. Sua chave é guardada somente no seu navegador.
+            </p>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Chave de API (Google AI Studio)</label>
+                <input type="password" id="inputApiKeyModal" placeholder="AIzaSy..."
+                    class="w-full text-sm border border-slate-300 rounded-xl p-2.5 focus:outline-none focus:ring-2 focus:ring-primary font-mono">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="fecharModalChave()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Cancelar</button>
+                <button onclick="salvarChaveApi()" class="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary-hover text-white transition shadow-sm">Salvar Chave</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Drawer Lateral Retrátil -->
+    <div id="abaLateral" class="aba-lateral">
+        <div class="p-5 border-b border-rose-200 flex items-center justify-between bg-primary/10">
+            <div class="flex items-center space-x-2">
+                <span class="text-xl">📚</span>
+                <h2 class="text-xl font-bold text-primary">Minhas Turmas</h2>
+            </div>
+            <button onclick="fecharAba()"
+                class="text-primary hover:text-rose-800 text-2xl font-bold p-1 leading-none transition">
+                &times;
+            </button>
+        </div>
+
+        <div class="p-4 overflow-y-auto flex-1">
+            <button onclick="novaConversa()"
+                class="w-full mb-5 bg-primary hover:bg-primary-hover text-white font-bold py-2.5 px-4 rounded-xl shadow transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-plus"></i>
+                <span>Nova Conversa de Estudo</span>
+            </button>
+
+            <!-- Accordion 1: Tarefas Pendentes -->
+            <div class="turma text-xs sm:text-sm">
+                <div class="turma-header" onclick="toggleTurma(this)">
+                    <span><i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Tarefas Pendentes</span>
+                    <span>▼</span>
+                </div>
+                <div class="turma-conteudo space-y-2 text-slate-700">
+                    <div class="p-2 bg-white rounded-lg border border-teal-100 shadow-sm hover:border-primary cursor-pointer"
+                        onclick="iniciarDuvida('Matemática - Ajuda com a Tarefa 1 de Limites e Derivadas')">
+                        <p class="font-bold text-primary text-xs">Matemática</p>
+                        <p class="text-xs">Exercício 1: Fórmula de Taylor</p>
+                    </div>
+                    <div class="p-2 bg-white rounded-lg border border-teal-100 shadow-sm hover:border-primary cursor-pointer"
+                        onclick="iniciarDuvida('Português - Dicas para Redação Dissertativa Argumentativa')">
+                        <p class="font-bold text-primary text-xs">Português</p>
+                        <p class="text-xs">Análise de Redação Nota 1000</p>
+                    </div>
+                    <div class="p-2 bg-white rounded-lg border border-teal-100 shadow-sm hover:border-primary cursor-pointer"
+                        onclick="iniciarDuvida('Física - Resolução das 3 Leis de Newton')">
+                        <p class="font-bold text-primary text-xs">Física</p>
+                        <p class="text-xs">Lista de Dinâmica e Movimento</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion 2: Matérias -->
+            <div class="turma text-xs sm:text-sm">
+                <div class="turma-header" onclick="toggleTurma(this)">
+                    <span><i class="fa-solid fa-book-open mr-1.5"></i> Minhas Disciplinas</span>
+                    <span>▼</span>
+                </div>
+                <div class="turma-conteudo space-y-1.5">
+                    <div onclick="selecionarMateriaDrawer('Matemática')"
+                        class="p-2 hover:bg-white/80 rounded cursor-pointer font-medium text-slate-700 flex justify-between items-center">
+                        <span>📐 Matemática</span>
+                        <span class="text-xs bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full">Ativo</span>
+                    </div>
+                    <div onclick="selecionarMateriaDrawer('Língua Portuguesa')"
+                        class="p-2 hover:bg-white/80 rounded cursor-pointer font-medium text-slate-700 flex justify-between items-center">
+                        <span>✍️ Língua Portuguesa</span>
+                        <span class="text-xs bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full">Ativo</span>
+                    </div>
+                    <div onclick="selecionarMateriaDrawer('Física')"
+                        class="p-2 hover:bg-white/80 rounded cursor-pointer font-medium text-slate-700 flex justify-between items-center">
+                        <span>⚡ Física</span>
+                        <span class="text-xs bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full">Ativo</span>
+                    </div>
+                    <div onclick="selecionarMateriaDrawer('História')"
+                        class="p-2 hover:bg-white/80 rounded cursor-pointer font-medium text-slate-700 flex justify-between items-center">
+                        <span>🏛️ História</span>
+                        <span class="text-xs bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full">Ativo</span>
+                    </div>
+                    <div onclick="selecionarMateriaDrawer('Química')"
+                        class="p-2 hover:bg-white/80 rounded cursor-pointer font-medium text-slate-700 flex justify-between items-center">
+                        <span>🧪 Química</span>
+                        <span class="text-xs bg-teal-200 text-teal-800 px-2 py-0.5 rounded-full">Ativo</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accordion 3: Histórico de Conversas -->
+            <div class="mt-6">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2 px-1">Histórico de Estudos</h3>
+                <div id="listaHistorico" class="space-y-2"></div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-rose-200 bg-amber-50 text-xs text-slate-600 text-center">
+            <p>Plataforma AprimorAI v2.5</p>
+        </div>
+    </div>
+
+    <!-- Overlay para fechar menu -->
+    <div id="overlay" class="overlay" onclick="fecharAba()"></div>
+
+    <!-- 4. ÁREA PRINCIPAL DO CHAT -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 flex flex-col justify-between">
+
+        <!-- Container das Mensagens -->
+        <div id="chatMessages" class="chat-container flex-1 overflow-y-auto space-y-4 pb-6 min-h-[50vh]">
+
+            <!-- Welcome Hero Banner -->
+            <div id="welcomeHero"
+                class="bg-white border border-rose-100 rounded-3xl p-6 sm:p-8 shadow-sm text-center relative overflow-hidden my-auto">
+                <div
+                    class="inline-flex items-center space-x-2 bg-rose-50 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold mb-4">
+                    <span>✨ Tutoria Inteligente 24/7</span>
+                </div>
+
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2">
+                    Olá! Sou o <span class="text-primary">AprimorAI</span> 🪄
+                </h1>
+                <p class="text-slate-600 max-w-xl mx-auto text-sm sm:text-base mb-6">
+                    Seu assistente educacional com IA. Tire suas dúvidas, peça resumos, resolva exercícios passo a passo
+                    e acelere o seu aprendizado!
+                </p>
+
+                <!-- Cards de Sugestões -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto text-left">
+                    <button
+                        onclick="enviarPromptCard('Como aplicar a fórmula de Taylor nesta questão de cálculo e encontrar as derivadas?')"
+                        class="p-3.5 bg-bg-cream hover:bg-rose-50/60 border border-amber-200/70 rounded-2xl transition group flex items-start space-x-3">
+                        <span class="text-xl group-hover:scale-110 transition">🎯</span>
+                        <div>
+                            <p class="font-bold text-xs text-primary mb-0.5">Matemática</p>
+                            <p class="text-xs text-slate-700 font-medium">"Como aplicar a fórmula de Taylor e derivadas?"</p>
+                        </div>
+                    </button>
+
+                    <button
+                        onclick="enviarPromptCard('Como estruturar uma redação Nota 1000 para o ENEM com introdução, desenvolvimento e proposta de intervenção?')"
+                        class="p-3.5 bg-bg-cream hover:bg-rose-50/60 border border-amber-200/70 rounded-2xl transition group flex items-start space-x-3">
+                        <span class="text-xl group-hover:scale-110 transition">✍️</span>
+                        <div>
+                            <p class="font-bold text-xs text-primary mb-0.5">Língua Portuguesa</p>
+                            <p class="text-xs text-slate-700 font-medium">"Como estruturar uma redação Nota 1000 no ENEM?"</p>
+                        </div>
+                    </button>
+
+                    <button
+                        onclick="enviarPromptCard('Quais foram as principais causas, fases e impactos da Revolução Industrial na sociedade moderna?')"
+                        class="p-3.5 bg-bg-cream hover:bg-rose-50/60 border border-amber-200/70 rounded-2xl transition group flex items-start space-x-3">
+                        <span class="text-xl group-hover:scale-110 transition">🏛️</span>
+                        <div>
+                            <p class="font-bold text-xs text-primary mb-0.5">História</p>
+                            <p class="text-xs text-slate-700 font-medium">"Resumo dos principais pontos da Revolução Industrial."</p>
+                        </div>
+                    </button>
+
+                    <button
+                        onclick="enviarPromptCard('Explique as 3 Leis de Newton com exemplos práticos do dia a dia e fórmulas envolvidas.')"
+                        class="p-3.5 bg-bg-cream hover:bg-rose-50/60 border border-amber-200/70 rounded-2xl transition group flex items-start space-x-3">
+                        <span class="text-xl group-hover:scale-110 transition">🚀</span>
+                        <div>
+                            <p class="font-bold text-xs text-primary mb-0.5">Física</p>
+                            <p class="text-xs text-slate-700 font-medium">"Explique as Leis de Newton com exemplos do cotidiano."</p>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 5. Caixa de Entrada e Comandos de Prompt -->
+        <div class="mt-4">
+            <!-- Atalhos de Comandos Rápidos -->
+            <div class="flex items-center space-x-2 overflow-x-auto pb-2 text-xs">
+                <span class="text-slate-500 font-semibold whitespace-nowrap"><i
+                        class="fa-solid fa-wand-magic-sparkles mr-1 text-primary"></i> Atalhos:</span>
+                <button onclick="inserirAtalho('/explicar')"
+                    class="bg-white hover:bg-rose-50 text-primary border border-rose-200 px-2.5 py-1 rounded-full font-semibold transition whitespace-nowrap shadow-xs">
+                    /explicar
+                </button>
+                <button onclick="inserirAtalho('/exercicio')"
+                    class="bg-white hover:bg-rose-50 text-primary border border-rose-200 px-2.5 py-1 rounded-full font-semibold transition whitespace-nowrap shadow-xs">
+                    /exercício
+                </button>
+                <button onclick="inserirAtalho('/resumo')"
+                    class="bg-white hover:bg-rose-50 text-primary border border-rose-200 px-2.5 py-1 rounded-full font-semibold transition whitespace-nowrap shadow-xs">
+                    /resumo
+                </button>
+                <button onclick="inserirAtalho('/corrigir')"
+                    class="bg-white hover:bg-rose-50 text-primary border border-rose-200 px-2.5 py-1 rounded-full font-semibold transition whitespace-nowrap shadow-xs">
+                    /corrigir
+                </button>
+            </div>
+
+            <!-- Form Caixa de Mensagem -->
+            <form id="chatForm" onsubmit="tratarEnvioFormulario(event)"
+                class="bg-white rounded-2xl p-2 sm:p-3 border border-amber-200 shadow-md flex items-end space-x-2 relative">
+                <!-- Badge da Matéria Ativa -->
+                <div id="activeSubjectBadge"
+                    class="hidden sm:flex items-center justify-center bg-teal-100 text-teal-800 text-xs font-bold px-2.5 py-1 rounded-lg self-center whitespace-nowrap">
+                    Geral
+                </div>
+
+                <!-- Textarea Interativo -->
+                <textarea id="userInput" rows="2" placeholder="Digite sua dúvida ou escolha um comando..."
+                    onkeydown="tratarTeclaEnter(event)"
+                    class="flex-1 bg-transparent border-0 focus:ring-0 focus:outline-none resize-none text-slate-800 text-sm sm:text-base p-1.5 max-h-32"></textarea>
+
+                <!-- Botão Enviar -->
+                <button type="submit" id="btnEnviar"
+                    class="bg-primary hover:bg-primary-hover text-white w-11 h-11 rounded-xl flex items-center justify-center transition shadow-md transform active:scale-95 flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+
+            <div class="flex justify-between items-center px-2 mt-1 text-[11px] text-slate-500">
+                <span>Pressione <kbd class="bg-white border rounded px-1 text-slate-600">Enter</kbd> para enviar ou <kbd
+                        class="bg-white border rounded px-1 text-slate-600">Shift + Enter</kbd> para nova linha</span>
+                <span id="charCount">0 caracteres</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- 6. RODAPÉ ESTILIZADO -->
+    <footer>
+        <img src="footer1.svg" class="imagem-canto-esq">
+        <img src="footer2.svg" class="imagem-canto-dir">
+        <h3>Desenvolvido por Samuel Silva Tironi, Danielle Alves Lima e Maria Gabriela Pieri de Lima</h3>
+    </footer>
+    </body>
+    <!-- LÓGICA E INTEGRAÇÃO JAVASCRIPT -->
+    <script>
+        // Chave padrão (você pode colocar a sua aqui ou usar o botão "Chave API" na interface)
+        const CHAVE_PADRAO_FALLBACK = ""; 
+        const GEMINI_MODEL = "gemini-3.8-flash";
+
+        function obterApiKey() {
+            return localStorage.getItem('aprimorai_gemini_key') || CHAVE_PADRAO_FALLBACK;
+        }
+
+        // Estado Global da Aplicação
+        let estadoChat = {
+            historicoConversas: [],
+            chatAtualId: null,
+            materiaAtual: 'Geral',
+            mensagens: []
+        };
+
+        // Inicialização
+        window.onload = function () {
+            carregarDoLocalStorage();
+            if (!estadoChat.chatAtualId || estadoChat.mensagens.length === 0) {
+                novaConversa(false);
+            } else {
+                renderizarMensagens();
+            }
+            atualizarListaHistoricoDrawer();
+
+            const userInput = document.getElementById('userInput');
+            userInput.addEventListener('input', function () {
+                document.getElementById('charCount').innerText = `${this.value.length} caracteres`;
+            });
+        };
+
+        // Modal de Configuração de Chave
+        function abrirModalChave() {
+            document.getElementById('inputApiKeyModal').value = obterApiKey();
+            document.getElementById('modalChave').classList.remove('hidden');
+        }
+
+        function fecharModalChave() {
+            document.getElementById('modalChave').classList.add('hidden');
+        }
+
+        function salvarChaveApi() {
+            const chave = document.getElementById('inputApiKeyModal').value.trim();
+            if (!chave) {
+                alert("Por favor, digite uma chave de API válida.");
+                return;
+            }
+            localStorage.setItem('aprimorai_gemini_key', chave);
+            fecharModalChave();
+            alert("Chave API salva com sucesso!");
+        }
+
+        // Drawer Controls
+        function abrirAba() {
+            document.getElementById("abaLateral").classList.add("aberta");
+            document.getElementById("overlay").classList.add("ativo");
+        }
+
+        function fecharAba() {
+            document.getElementById("abaLateral").classList.remove("aberta");
+            document.getElementById("overlay").classList.remove("ativo");
+        }
+
+        function toggleTurma(elementoHeader) {
+            const turma = elementoHeader.parentElement;
+            turma.classList.toggle("aberta");
+        }
+
+        // Alterar Matéria
+        function alterarMateria(materia) {
+            estadoChat.materiaAtual = materia;
+            const badge = document.getElementById('activeSubjectBadge');
+            badge.innerText = materia;
+            badge.classList.remove('hidden');
+            salvarNoLocalStorage();
+        }
+
+        function selecionarMateriaDrawer(materia) {
+            document.getElementById('subjectSelect').value = materia;
+            alterarMateria(materia);
+            fecharAba();
+        }
+
+        // Atalhos de Prompt
+        function inserirAtalho(comando) {
+            const input = document.getElementById('userInput');
+            let prefixo = '';
+            switch (comando) {
+                case '/explicar':
+                    prefixo = 'Explique detalhadamente e com exemplos o seguinte conceito: ';
+                    break;
+                case '/exercicio':
+                    prefixo = 'Crie 1 exercício prático com gabarito passo a passo sobre: ';
+                    break;
+                case '/resumo':
+                    prefixo = 'Faça um resumo direto e estruturado em tópicos de: ';
+                    break;
+                case '/corrigir':
+                    prefixo = 'Revise, corrija e dê sugestões para o seguinte texto/resposta: ';
+                    break;
+            }
+            input.value = prefixo;
+            input.focus();
+        }
+
+        function tratarTeclaEnter(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                tratarEnvioFormulario();
+            }
+        }
+
+        function enviarPromptCard(texto) {
+            document.getElementById('userInput').value = texto;
+            tratarEnvioFormulario();
+        }
+
+        function iniciarDuvida(texto) {
+            fecharAba();
+            document.getElementById('userInput').value = texto;
+            tratarEnvioFormulario();
+        }
+
+        // Envio do formulário
+        async function tratarEnvioFormulario(e) {
+            if (e) e.preventDefault();
+
+            const input = document.getElementById('userInput');
+            const btnEnviar = document.getElementById('btnEnviar');
+            const textoUsuario = input.value.trim();
+
+            if (!textoUsuario) return;
+
+            const apiKey = obterApiKey();
+            if (!apiKey) {
+                abrirModalChave();
+                alert("Por favor, configure sua chave da API Gemini antes de conversar.");
+                return;
+            }
+
+            input.value = '';
+            document.getElementById('charCount').innerText = '0 caracteres';
+
+            const welcomeHero = document.getElementById('welcomeHero');
+            if (welcomeHero) welcomeHero.style.display = 'none';
+
+            // Adiciona mensagem do usuário
+            const msgUsuario = {
+                role: 'user',
+                content: textoUsuario,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            estadoChat.mensagens.push(msgUsuario);
+            renderizarMensagemNaTela(msgUsuario);
+
+            if (estadoChat.mensagens.length === 1) {
+                const conversa = estadoChat.historicoConversas.find(c => c.id === estadoChat.chatAtualId);
+                if (conversa) {
+                    conversa.titulo = textoUsuario.substring(0, 30) + '...';
+                    atualizarListaHistoricoDrawer();
+                }
+            }
+
+            salvarNoLocalStorage();
+            exibirIndicadorDigitando(true);
+            input.disabled = true;
+            btnEnviar.disabled = true;
+
+            try {
+                const respostaIA = await chamarGeminiAPI(estadoChat.mensagens, estadoChat.materiaAtual);
+
+                exibirIndicadorDigitando(false);
+
+                const msgIA = {
+                    role: 'model',
+                    content: respostaIA,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                estadoChat.mensagens.push(msgIA);
+                renderizarMensagemNaTela(msgIA);
+
+                salvarNoLocalStorage();
+            } catch (erro) {
+                console.error("Erro no envio:", erro);
+                exibirIndicadorDigitando(false);
+                
+                const msgErro = {
+                    role: 'model',
+                    isError: true,
+                    content: `⚠️ **Ops! Ocorreu um problema ao comunicar com o Gemini:**\n\n_${erro.message}_\n\nVerifique sua chave de API clicando no botão **Chave API** no topo.`,
+                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                };
+                estadoChat.mensagens.push(msgErro);
+                renderizarMensagemNaTela(msgErro);
+            } finally {
+                input.disabled = false;
+                btnEnviar.disabled = false;
+                input.focus();
+            }
+        }
+
+        // Chamada oficial à API Gemini v1beta
+        async function chamarGeminiAPI(mensagens, materia) {
+            const apiKey = obterApiKey();
+            if (!apiKey) {
+                throw new Error("Chave da API Gemini não configurada.");
+            }
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+
+            const sistemaPrompt = `Você é o AprimorAI, um tutor escolar inteligente, empático e paciente especialista na disciplina de ${materia}.
+Suas diretrizes:
+- Explique os conteúdos de forma didática e passo a passo.
+- Sempre dê exemplos práticos e simples.
+- Utilize formatação Markdown (títulos, negrito, listas e blocos de código) para tornar a leitura agradável.`;
+
+            // Filtra e valida histórico para evitar quebras de alternância exigidas pela API
+            const validContents = [];
+            for (const m of mensagens) {
+                if (m.isError) continue;
+                const role = m.role === 'model' ? 'model' : 'user';
+                const text = (m.content || '').trim();
+                if (!text) continue;
+
+                if (validContents.length > 0 && validContents[validContents.length - 1].role === role) {
+                    validContents[validContents.length - 1].parts[0].text += `\n\n${text}`;
+                } else {
+                    validContents.push({
+                        role: role,
+                        parts: [{ text }]
+                    });
+                }
+            }
+
+            while (validContents.length > 0 && validContents[0].role !== 'user') {
+                validContents.shift();
+            }
+
+            if (validContents.length === 0) {
+                throw new Error("Nenhuma mensagem válida para envio.");
+            }
+
+            const requestBody = {
+                system_instruction: {
+                    parts: [{ text: sistemaPrompt }]
+                },
+                contents: validContents,
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 2048
+                }
+            };
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                let detalheErro = `Erro ${response.status}: ${response.statusText}`;
+                try {
+                    const errorJson = await response.json();
+                    if (errorJson && errorJson.error && errorJson.error.message) {
+                        detalheErro = errorJson.error.message;
+                    }
+                } catch (_) {}
+                throw new Error(detalheErro);
+            }
+
+            const data = await response.json();
+
+            if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts?.[0]?.text) {
+                if (data.promptFeedback?.blockReason) {
+                    throw new Error(`A resposta foi bloqueada pelos filtros de segurança (${data.promptFeedback.blockReason}).`);
+                }
+                throw new Error("A IA não retornou uma resposta textual válida.");
+            }
+
+            return data.candidates[0].content.parts[0].text;
+        }
+
+        // Renderização Visual das Mensagens
+        function renderizarMensagens() {
+            const container = document.getElementById('chatMessages');
+            container.innerHTML = '';
+
+            if (estadoChat.mensagens.length === 0) {
+                container.innerHTML = `
+                <div id="welcomeHero" class="bg-white border border-rose-100 rounded-3xl p-6 sm:p-8 shadow-sm text-center relative overflow-hidden my-auto">
+                    <div class="inline-flex items-center space-x-2 bg-rose-50 text-primary px-3.5 py-1.5 rounded-full text-xs font-bold mb-4">
+                        <span>✨ Tutoria Inteligente 24/7</span>
+                    </div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-800 mb-2">
+                        Olá! Sou o <span class="text-primary">AprimorAI</span> 🪄
+                    </h1>
+                    <p class="text-slate-600 max-w-xl mx-auto text-sm sm:text-base mb-6">
+                        Como posso te ajudar nos seus estudos hoje? Escolha uma opção abaixo ou digite sua dúvida.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto text-left">
+                        <button onclick="enviarPromptCard('Como aplicar a fórmula de Taylor nesta questão de cálculo e encontrar as derivadas?')" class="p-3.5 bg-bg-cream hover:bg-rose-50/60 border border-amber-200/70 rounded-2xl transition group flex items-start space-x-3">
+                            <span class="text-xl">🎯</span>
+                            <div>
+                                <p class="font-bold text-xs text-primary mb-0.5">Matemática</p>
+                                <p class="text-xs text-slate-700 font-medium">"Como aplicar a fórmula de Taylor e derivadas?"</p>
+                            </div>
+                        </button>
+                        <button onclick="enviarPromptCard('Como estruturar uma redação Nota 1000 para o ENEM?')" class="p-3.5 bg-bg-cream hover:bg-rose-50/60 border border-amber-200/70 rounded-2xl transition group flex items-start space-x-3">
+                            <span class="text-xl">✍️</span>
+                            <div>
+                                <p class="font-bold text-xs text-primary mb-0.5">Língua Portuguesa</p>
+                                <p class="text-xs text-slate-700 font-medium">"Como estruturar uma redação Nota 1000 no ENEM?"</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>`;
+                return;
+            }
+
+            estadoChat.mensagens.forEach(msg => renderizarMensagemNaTela(msg));
+            rolarParaOFim();
+        }
+
+        function renderizarMensagemNaTela(msg) {
+            const container = document.getElementById('chatMessages');
+            const welcomeHero = document.getElementById('welcomeHero');
+            if (welcomeHero) welcomeHero.remove();
+
+            const isUser = msg.role === 'user';
+            const msgDiv = document.createElement('div');
+            msgDiv.className = isUser ?
+                'flex justify-end items-end space-x-2 my-3' :
+                'flex justify-start items-start space-x-3 my-4';
+
+            if (isUser) {
+                msgDiv.innerHTML = `
+                    <div class="max-w-[85%] sm:max-w-[75%] bg-white border border-slate-200 shadow-xs rounded-2xl rounded-br-xs p-4 chat-bubble-user">
+                        <div class="flex items-center justify-between space-x-4 mb-1 border-b border-slate-100 pb-1">
+                            <span class="text-xs font-bold text-primary flex items-center">
+                                <i class="fa-solid fa-user-graduate mr-1"></i> Você
+                            </span>
+                            <span class="text-[10px] text-slate-400">${msg.timestamp || ''}</span>
+                        </div>
+                        <div class="text-sm text-slate-800 whitespace-pre-wrap">${escapeHtml(msg.content)}</div>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-rose-100 text-primary flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-xs">
+                        🎓
+                    </div>
+                `;
+            } else {
+                const htmlFormatado = typeof marked !== 'undefined' ? marked.parse(msg.content) : msg.content;
+
+                msgDiv.innerHTML = `
+                    <div class="w-9 h-9 rounded-full bg-teal-100 border border-teal-200 text-teal-800 flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-xs mt-1">
+                        🪄
+                    </div>
+                    <div class="max-w-[90%] sm:max-w-[82%] chat-bubble-ai rounded-2xl rounded-bl-xs p-4 sm:p-5 shadow-xs">
+                        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-teal-200/60">
+                            <span class="text-xs font-bold text-teal-900 flex items-center">
+                                <span class="sparkle mr-1">🪄</span> AprimorAI <span class="ml-2 text-[10px] bg-teal-200 text-teal-900 px-2 py-0.5 rounded-full font-semibold">Tutor IA</span>
+                            </span>
+                            <span class="text-[10px] text-teal-700">${msg.timestamp || ''}</span>
+                        </div>
+                        <div class="markdown-body text-xs sm:text-sm text-slate-800">
+                            ${htmlFormatado}
+                        </div>
+                        <div class="mt-3 pt-2 border-t border-teal-200/50 flex justify-end">
+                            <button class="btn-copiar text-[11px] text-teal-700 hover:text-teal-900 font-semibold flex items-center space-x-1 bg-white/60 hover:bg-white px-2 py-1 rounded transition">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>Copiar resposta</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Event listener seguro para evitar conflitos de strings no HTML
+                const btnCopiar = msgDiv.querySelector('.btn-copiar');
+                if (btnCopiar) {
+                    btnCopiar.addEventListener('click', () => copiarTexto(btnCopiar, msg.content));
+                }
+            }
+
+            container.appendChild(msgDiv);
+            rolarParaOFim();
+        }
+
+        // Indicador de Digitação
+        function exibirIndicadorDigitando(exibir) {
+            let elemento = document.getElementById('typingIndicator');
+            const container = document.getElementById('chatMessages');
+
+            if (exibir) {
+                if (!elemento) {
+                    elemento = document.createElement('div');
+                    elemento.id = 'typingIndicator';
+                    elemento.className = 'flex items-center space-x-3 my-3';
+                    elemento.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                            🪄
+                        </div>
+                        <div class="bg-teal-50 border border-teal-200 text-teal-800 rounded-2xl px-4 py-3 flex items-center space-x-2 text-xs font-medium">
+                            <span>AprimorAI está pensando</span>
+                            <div class="flex space-x-1 items-center ml-1">
+                                <div class="w-1.5 h-1.5 bg-teal-600 rounded-full typing-dot"></div>
+                                <div class="w-1.5 h-1.5 bg-teal-600 rounded-full typing-dot"></div>
+                                <div class="w-1.5 h-1.5 bg-teal-600 rounded-full typing-dot"></div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(elemento);
+                }
+                rolarParaOFim();
+            } else {
+                if (elemento) elemento.remove();
+            }
+        }
+
+        function rolarParaOFim() {
+            const container = document.getElementById('chatMessages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Gerenciamento de Conversas e LocalStorage
+        function novaConversa(recarregarUI = true) {
+            const novoId = 'chat_' + Date.now();
+            const novaConversaObj = {
+                id: novoId,
+                titulo: 'Nova Conversa',
+                materia: estadoChat.materiaAtual || 'Geral',
+                mensagens: []
+            };
+
+            estadoChat.historicoConversas.unshift(novaConversaObj);
+            estadoChat.chatAtualId = novoId;
+            estadoChat.mensagens = novaConversaObj.mensagens;
+
+            salvarNoLocalStorage();
+
+            if (recarregarUI) {
+                renderizarMensagens();
+                atualizarListaHistoricoDrawer();
+                fecharAba();
+            }
+        }
+
+        function carregarConversa(id) {
+            const conversa = estadoChat.historicoConversas.find(c => c.id === id);
+            if (conversa) {
+                estadoChat.chatAtualId = conversa.id;
+                estadoChat.mensagens = conversa.mensagens;
+                estadoChat.materiaAtual = conversa.materia || 'Geral';
+                document.getElementById('subjectSelect').value = estadoChat.materiaAtual;
+                alterarMateria(estadoChat.materiaAtual);
+                renderizarMensagens();
+                atualizarListaHistoricoDrawer();
+                fecharAba();
+            }
+        }
+
+        function excluirConversa(e, id) {
+            e.stopPropagation();
+            estadoChat.historicoConversas = estadoChat.historicoConversas.filter(c => c.id !== id);
+
+            if (estadoChat.chatAtualId === id) {
+                if (estadoChat.historicoConversas.length > 0) {
+                    carregarConversa(estadoChat.historicoConversas[0].id);
+                } else {
+                    novaConversa(true);
+                }
+            } else {
+                salvarNoLocalStorage();
+                atualizarListaHistoricoDrawer();
+            }
+        }
+
+        function limparChatAtual() {
+            if (confirm("Deseja realmente limpar as mensagens desta conversa?")) {
+                estadoChat.mensagens = [];
+                const conversa = estadoChat.historicoConversas.find(c => c.id === estadoChat.chatAtualId);
+                if (conversa) conversa.mensagens = [];
+                salvarNoLocalStorage();
+                renderizarMensagens();
+            }
+        }
+
+        function atualizarListaHistoricoDrawer() {
+            const lista = document.getElementById('listaHistorico');
+            if (!lista) return;
+            lista.innerHTML = '';
+
+            if (estadoChat.historicoConversas.length === 0) {
+                lista.innerHTML = '<p class="text-xs text-slate-400 italic px-2">Nenhuma conversa salva.</p>';
+                return;
+            }
+
+            estadoChat.historicoConversas.forEach(c => {
+                const item = document.createElement('div');
+                const ativeClass = c.id === estadoChat.chatAtualId ?
+                    'bg-rose-100 border-primary text-rose-900 font-bold' :
+                    'bg-white hover:bg-slate-50 text-slate-700 border-transparent';
+
+                item.className =
+                    `p-2.5 border rounded-xl cursor-pointer text-xs flex items-center justify-between shadow-2xs transition ${ativeClass}`;
+                item.onclick = () => carregarConversa(c.id);
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2 truncate">
+                        <span>💬</span>
+                        <span class="truncate max-w-[170px]">${escapeHtml(c.titulo || 'Conversa sem título')}</span>
+                    </div>
+                    <button class="btn-excluir text-slate-400 hover:text-rose-600 p-1 transition" title="Excluir">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+
+                item.querySelector('.btn-excluir').onclick = (e) => excluirConversa(e, c.id);
+                lista.appendChild(item);
+            });
+        }
+
+        function salvarNoLocalStorage() {
+            try {
+                const conversaAtual = estadoChat.historicoConversas.find(c => c.id === estadoChat.chatAtualId);
+                if (conversaAtual) {
+                    conversaAtual.mensagens = estadoChat.mensagens;
+                    conversaAtual.materia = estadoChat.materiaAtual;
+                }
+                localStorage.setItem('aprimorai_chat_state', JSON.stringify(estadoChat));
+            } catch (e) {
+                console.warn("Aviso: Armazenamento local inacessível.", e);
+            }
+        }
+
+        function carregarDoLocalStorage() {
+            try {
+                const dadosSalvos = localStorage.getItem('aprimorai_chat_state');
+                if (dadosSalvos) {
+                    const parsed = JSON.parse(dadosSalvos);
+                    estadoChat.historicoConversas = parsed.historicoConversas || [];
+                    estadoChat.chatAtualId = parsed.chatAtualId || null;
+
+                    const atual = estadoChat.historicoConversas.find(c => c.id === estadoChat.chatAtualId);
+                    if (atual) {
+                        estadoChat.mensagens = atual.mensagens || [];
+                        estadoChat.materiaAtual = atual.materia || 'Geral';
+                        document.getElementById('subjectSelect').value = estadoChat.materiaAtual;
+                        alterarMateria(estadoChat.materiaAtual);
+                    }
+                }
+            } catch (e) {
+                console.warn("Aviso: Não foi possível carregar do LocalStorage.", e);
+            }
+        }
+
+        // Exportar Transcrição do Chat
+        function exportarChat() {
+            if (estadoChat.mensagens.length === 0) {
+                alert("Não há mensagens para exportar.");
+                return;
+            }
+
+            let conteudo = `=== Transcrição de Estudo - AprimorAI ===\n`;
+            conteudo += `Disciplina: ${estadoChat.materiaAtual}\n`;
+            conteudo += `Data: ${new Date().toLocaleDateString()}\n\n`;
+
+            estadoChat.mensagens.forEach(msg => {
+                const autor = msg.role === 'user' ? 'ESTUDANTE' : 'APRIMORAI (Tutor IA)';
+                conteudo += `[${msg.timestamp || ''}] ${autor}:\n${msg.content}\n\n${'-'.repeat(40)}\n\n`;
+            });
+
+            const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `AprimorAI_Estudo_${estadoChat.materiaAtual}_${Date.now()}.txt`;
+            link.click();
+        }
+
+        // Utilitários
+        async function copiarTexto(btn, texto) {
+            try {
+                await navigator.clipboard.writeText(texto);
+            } catch (_) {
+                const el = document.createElement('textarea');
+                el.value = texto;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+            }
+
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-check text-emerald-600"></i> <span class="text-emerald-700">Copiado!</span>`;
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 2000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AprimorAI - Desempenho Acadêmico da Escola</title>
+
+    <!-- Fontes Google: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para Gráficos Interativos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#c0576f',
+                        'primary-hover': '#a8485e',
+                        secondary: '#8daec3',
+                        'secondary-hover': '#7398b0',
+                        'bg-main': '#ffe4c4',
+                        'bg-cream': '#fff8f0',
+                        'bg-card': '#ffffff',
+                        'bg-accent': '#daf0f2',
+                        'text-dark': '#2d3748',
+                        'text-muted': '#64748b',
+                        'border-color': '#f0e2d5'
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #c0576f;
+            --primary-hover: #a8485e;
+            --secondary: #8daec3;
+            --secondary-hover: #7398b0;
+            --bg-main: #ffe4c4;
+            --bg-card: #ffffff;
+            --bg-accent: #daf0f2;
+            --text-dark: #2d3748;
+            --text-muted: #64748b;
+            --border-color: #f0e2d5;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .banner {
+            height: 42px;
+            width: 100%;
+            background-color: #8daec3;
+            display: flex;
+            align-items: center;
+        }
+
+        .banner img {
+            width: 20%;
+            max-width: 180px;
+            height: auto;
+            display: block;
+        }
+
+        .banner-branco {
+            min-height: 82px;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        /* Aba Lateral Retrátil */
+        .aba-lateral {
+            position: fixed;
+            top: 0;
+            left: -380px;
+            width: 340px;
+            height: 100vh;
+            background-color: #fff1e0;
+            box-shadow: 8px 0 25px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .aba-lateral.aberta {
+            left: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            visibility: hidden;
+            z-index: 900;
+            transition: all 0.3s ease;
+        }
+
+        .overlay.ativo {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .turma {
+            background: #c4e0e2;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            font-size: 15px;
+            overflow: hidden;
+            transition: background 0.2s;
+        }
+
+        .turma-header {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            color: #b9526f;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+        }
+
+        .turma-header:hover {
+            background: #8fc3c9;
+        }
+
+        .turma-conteudo {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.3s ease;
+            background-color: #daf0f2;
+            padding: 0 15px;
+        }
+
+        .turma.aberta .turma-conteudo {
+            max-height: 280px;
+            padding: 10px 15px;
+            overflow-y: auto;
+        }
+
+        /* Rodapé com Cantos SVGs */
+        footer {
+            background-color: #cc8797;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .imagem-canto-esq,
+        .imagem-canto-dir {
+            position: absolute;
+            bottom: 0;
+            width: 180px;
+            max-width: 25%;
+            height: auto;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .imagem-canto-esq {
+            left: 0;
+        }
+
+        .imagem-canto-dir {
+            right: 0;
+        }
+
+        /* Scrollbar Personalizada */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c0576f80;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-bg-main min-h-screen flex flex-col">
+
+    <!-- 1. Topo Superior -->
+    <div class="banner">
+        <img src="AprimorAI.svg" alt="AprimorAI" onerror="this.src=''; this.alt='AprimorAI';">
+    </div>
+
+    <!-- 2. Navbar Principal -->
+    <header class="banner-branco">
+        <div class="flex items-center space-x-3">
+            <button onclick="abrirAba()"
+                class="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all transform hover:scale-105 flex items-center shadow-md">
+                <i class="fa-solid fa-bars mr-2"></i>
+                <span>Navegação</span>
+            </button>
+            <div
+                class="hidden md:flex items-center space-x-2 text-xs font-bold text-slate-600 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-200">
+                <i class="fa-solid fa-chart-column text-primary"></i>
+                <span>Painel de Desempenho & Analytics Acadêmico</span>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="envio_relatorios.html"
+                class="bg-rose-50 hover:bg-rose-100 text-primary border border-rose-200 text-xs font-bold rounded-xl px-3 py-2 flex items-center space-x-1.5 transition shadow-sm">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span class="hidden sm:inline">Envio de Boletins</span>
+            </a>
+            <a href="chat_professores.html"
+                class="bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold rounded-xl px-3 py-2 flex items-center space-x-1.5 transition shadow-sm">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span class="hidden sm:inline">Tutor IA</span>
+            </a>
+            <a href="index.html"
+                class="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1.5">
+                <i class="fa-solid fa-house"></i>
+                <span class="hidden sm:inline">Início</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- 3. Drawer Lateral Retrátil -->
+    <div id="abaLateral" class="aba-lateral">
+        <div class="p-5 border-b border-rose-200 flex items-center justify-between bg-primary/10">
+            <div class="flex items-center space-x-2">
+                <span class="text-xl">📊</span>
+                <h2 class="text-xl font-bold text-primary">Módulos AprimorAI</h2>
+            </div>
+            <button onclick="fecharAba()"
+                class="text-primary hover:text-rose-800 text-2xl font-bold p-1 leading-none transition">
+                &times;
+            </button>
+        </div>
+
+        <div class="p-4 overflow-y-auto flex-1 space-y-3">
+            <a href="desempenho_academico.html"
+                class="p-3 bg-white rounded-xl border border-primary text-primary font-bold text-xs flex items-center space-x-2 shadow-xs">
+                <i class="fa-solid fa-chart-line"></i>
+                <span>Gráficos de Desempenho</span>
+            </a>
+            <a href="envio_relatorios.html"
+                class="p-3 bg-white hover:bg-rose-50/50 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs flex items-center space-x-2 transition">
+                <i class="fa-solid fa-envelope-open-text text-primary"></i>
+                <span>Disparo de Boletins por E-mail</span>
+            </a>
+            <a href="chat_professores.html"
+                class="p-3 bg-white hover:bg-rose-50/50 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs flex items-center space-x-2 transition">
+                <i class="fa-solid fa-robot text-teal-600"></i>
+                <span>Chat com Tutor de IA</span>
+            </a>
+        </div>
+
+        <div class="p-4 border-t border-rose-200 bg-amber-50 text-xs text-slate-600 text-center">
+            <p>Plataforma AprimorAI v2.5</p>
+        </div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" class="overlay" onclick="fecharAba()"></div>
+
+    <!-- 4. Conteúdo Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- Banner do Cabeçalho e Filtros -->
+        <section class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-amber-100 space-y-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b pb-4 border-slate-100">
+                <div>
+                    <div
+                        class="inline-flex items-center space-x-2 bg-rose-50 text-primary px-3 py-1 rounded-full text-xs font-bold mb-2">
+                        <span>📈 Indicadores Globais Institucionais</span>
+                    </div>
+                    <h1 class="text-2xl font-extrabold text-slate-800">
+                        Visão Geral de <span class="text-primary">Desempenho por Turma</span>
+                    </h1>
+                    <p class="text-xs sm:text-sm text-slate-500">
+                        Acompanhe as médias escolares do 1º Ano EF ao 3º Ano EM e identifique turmas com destaque ou necessidade de apoio pedagógico.
+                    </p>
+                </div>
+
+                <!-- Seletor de Período -->
+                <div class="flex items-center space-x-2 bg-bg-accent p-2 rounded-2xl border border-teal-200">
+                    <i class="fa-solid fa-calendar-check text-teal-800 ml-1 text-sm"></i>
+                    <select id="selectPeriodoGlobal" onchange="atualizarDashboardGeral()"
+                        class="bg-transparent text-teal-900 font-bold text-xs sm:text-sm focus:outline-none cursor-pointer">
+                        <option value="3B">3º Bimestre Letivo (2026)</option>
+                        <option value="1B">1º Bimestre Letivo (2026)</option>
+                        <option value="2B">2º Bimestre Letivo (2026)</option>
+                        <option value="ANUAL">Consolidado Anual Geral</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filtro Por Etapa de Ensino -->
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                    <i class="fa-solid fa-filter text-primary"></i> Filtrar por Etapa de Ensino:
+                </span>
+
+                <div class="flex flex-wrap gap-1.5 sm:gap-2">
+                    <button id="btnEtapaTodas" onclick="filtrarEtapa('todas')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs bg-primary text-white">
+                        Todas as Turmas (1º EF ao 3º EM)
+                    </button>
+                    <button id="btnEtapaEFI" onclick="filtrarEtapa('EFI')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-primary transition">
+                        Ensino Fundamental I (1º ao 5º)
+                    </button>
+                    <button id="btnEtapaEFII" onclick="filtrarEtapa('EFII')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-primary transition">
+                        Ensino Fundamental II (6º ao 9º)
+                    </button>
+                    <button id="btnEtapaEM" onclick="filtrarEtapa('EM')"
+                        class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-primary transition">
+                        Ensino Médio (1º ao 3º)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Indicadores Resumidos (KPI Cards) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            <!-- Card 1: Média Geral da Escola -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Média Geral da Escola</span>
+                    <div class="w-9 h-9 rounded-2xl bg-rose-50 text-primary flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpiMediaGeral" class="text-3xl font-extrabold text-slate-800">8.4</span>
+                    <span class="text-xs font-bold text-emerald-600 flex items-center">
+                        <i class="fa-solid fa-arrow-trend-up mr-0.5"></i> +0.3 vs. ant.
+                    </span>
+                </div>
+                <p class="text-[11px] text-slate-400">Meta estipulada pela gestão: 8.0</p>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
+            </div>
+
+            <!-- Card 2: Turma com Maior Média -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Maior Média</span>
+                    <div class="w-9 h-9 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+                </div>
+                <div>
+                    <span id="kpiMaiorMediaTurma" class="text-xl font-extrabold text-slate-800 block truncate">3º Ano A - EM</span>
+                    <span id="kpiMaiorMediaValor" class="text-xs font-bold text-emerald-600">Nota Média: 9.2 / 10.0</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Destaque de aproveitamento acadêmico</p>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500"></div>
+            </div>
+
+            <!-- Card 3: Turma com Menor Média -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Menor Média</span>
+                    <div class="w-9 h-9 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                </div>
+                <div>
+                    <span id="kpiMenorMediaTurma" class="text-xl font-extrabold text-slate-800 block truncate">7º Ano B - EF</span>
+                    <span id="kpiMenorMediaValor" class="text-xs font-bold text-amber-600">Nota Média: 7.2 / 10.0</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Requer intervenção pedagógica</p>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+            </div>
+
+            <!-- Card 4: Frequência Média Geral -->
+            <div class="bg-white p-5 rounded-3xl border border-slate-100 shadow-xs space-y-2 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Frequência Geral</span>
+                    <div class="w-9 h-9 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-user-check"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline space-x-2">
+                    <span id="kpiFrequenciaGeral" class="text-3xl font-extrabold text-slate-800">95.8%</span>
+                    <span class="text-xs font-bold text-teal-700">Presença</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Média acumulada em todas as turmas</p>
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-teal-500"></div>
+            </div>
+
+        </div>
+
+        <!-- Seção do Gráfico Principal + Card de Detalhamento da Turma -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Coluna Esquerda: Gráfico de Barras -->
+            <div class="lg:col-span-8 bg-white p-5 sm:p-6 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-primary"></i> Média por Turma (Do 1º EF ao 3º EM)
+                        </h2>
+                        <p class="text-xs text-slate-500">Clique em qualquer barra do gráfico para visualizar os detalhes específicos da turma.</p>
+                    </div>
+                    <span class="text-[10px] bg-rose-50 text-primary font-bold px-2.5 py-1 rounded-full self-start sm:self-auto border border-rose-200">
+                        Interativo
+                    </span>
+                </div>
+
+                <!-- Canvas para Chart.js -->
+                <div class="relative w-full h-[340px] sm:h-[380px] pt-2">
+                    <canvas id="graficoDesempenhoTurmas"></canvas>
+                </div>
+
+                <div class="pt-2 text-[11px] text-slate-400 text-center italic">
+                    * Dados simulados e estruturados para demonstração analítica em tempo real.
+                </div>
+            </div>
+
+            <!-- Coluna Direita: Detalhamento da Turma Selecionada -->
+            <div class="lg:col-span-4 space-y-4">
+                <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-4 sticky top-28">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <div>
+                            <span class="text-[10px] uppercase font-bold text-primary tracking-wider">Detalhamento Individual</span>
+                            <h3 id="detalheTurmaNome" class="text-lg font-extrabold text-slate-800">9º Ano A - Fund. II</h3>
+                        </div>
+                        <span id="detalheTurmaBadge" class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">
+                            Desempenho Alto
+                        </span>
+                    </div>
+
+                    <!-- Métricas Principais da Turma Selecionada -->
+                    <div class="grid grid-cols-2 gap-2 text-center">
+                        <div class="bg-bg-cream p-3 rounded-2xl border border-amber-200/60">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase block">Nota Média</span>
+                            <strong id="detalheTurmaMedia" class="text-xl font-extrabold text-primary">8.8</strong>
+                        </div>
+                        <div class="bg-bg-accent p-3 rounded-2xl border border-teal-200/60">
+                            <span class="text-[10px] font-bold text-teal-800 uppercase block">Frequência</span>
+                            <strong id="detalheTurmaFreq" class="text-xl font-extrabold text-teal-900">96.5%</strong>
+                        </div>
+                    </div>
+
+                    <!-- Desempenho por Disciplina (Barras Rápidas) -->
+                    <div class="space-y-2.5 pt-1">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+                            <span>Média por Disciplina</span>
+                            <span class="text-[10px] text-slate-400 font-normal">Escala 0-10</span>
+                        </h4>
+
+                        <div id="containerMateriasDetalhes" class="space-y-2 text-xs">
+                            <!-- Gerado dinamicamente no JS -->
+                        </div>
+                    </div>
+
+                    <!-- Parecer do Conselho da Turma -->
+                    <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 space-y-1">
+                        <span class="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-1">
+                            <i class="fa-solid fa-circle-info text-primary"></i> Observação da Coordenação:
+                        </span>
+                        <p id="detalheTurmaObs" class="text-xs text-slate-600 italic">
+                            Turma com excelente regularidade de entregas e forte engajamento no tutor de IA.
+                        </p>
+                    </div>
+
+                    <a id="btnAcaoDisparoTurma" href="envio_relatorios.html"
+                        class="w-full bg-primary hover:bg-primary-hover text-white text-xs font-bold py-3 px-4 rounded-xl shadow-xs transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Ir para Envio de Boletins desta Turma</span>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Tabela Completa de Comparativo das Turmas -->
+        <section class="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-slate-100 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-table-list text-primary"></i> Tabela Comparativa Completa de Turmas
+                </h2>
+                <span class="text-xs text-slate-400">Mostrando <strong id="countTurmasTabela" class="text-primary">12</strong> turmas</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider border-b border-slate-100">
+                            <th class="p-3">Turma</th>
+                            <th class="p-3">Etapa de Ensino</th>
+                            <th class="p-3 text-center">Nº Alunos</th>
+                            <th class="p-3 text-center">Média Geral</th>
+                            <th class="p-3 text-center">Frequência</th>
+                            <th class="p-3 text-center">Status Desempenho</th>
+                            <th class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbodyTurmasComparativo" class="divide-y divide-slate-100 text-slate-700">
+                        <!-- Preenchido via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 5. Rodapé -->
+    <footer class="mt-12 py-8 px-4 text-center text-xs sm:text-sm font-medium border-t border-rose-300 relative">
+        <svg class="imagem-canto-esq opacity-80" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 0 100 L 160 100 L 110 20 L 0 20 Z" fill="#a43e56" />
+            <circle cx="0" cy="100" r="90" fill="#c0576f" opacity="0.8" />
+            <circle cx="0" cy="100" r="55" fill="#883347" />
+        </svg>
+
+        <div class="relative z-10 max-w-3xl mx-auto space-y-2">
+            <div class="flex justify-center items-center space-x-2 text-white/90">
+                <span class="font-extrabold text-sm tracking-wide">AprimorAI</span>
+                <span>•</span>
+                <span>Ambiente de Aprendizagem Adaptativa</span>
+            </div>
+            <h3 class="text-white font-semibold text-xs sm:text-sm opacity-95">
+                Desenvolvido por Samuel Silva Tironi, Danielle Alves Lima e Maria Gabriela Pieri de Lima
+            </h3>
+            <p class="text-white/70 text-[11px]">© 2026 Todos os direitos reservados.</p>
+        </div>
+
+        <svg class="imagem-canto-dir opacity-80" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 200 100 L 40 100 L 90 20 L 200 20 Z" fill="#a43e56" />
+            <circle cx="200" cy="100" r="90" fill="#c0576f" opacity="0.8" />
+            <circle cx="200" cy="100" r="55" fill="#883347" />
+        </svg>
+    </footer>
+
+    <!-- LÓGICA JAVASCRIPT & CHART.JS -->
+    <script>
+        // Dados Completos Fictícios do 1º EF ao 3º EM para Demonstração Coerente
+        const dadosEscola = [
+            // Ensino Fundamental I
+            { id: '1EF', nome: '1º Ano A', etapa: 'EFI', etapaNome: 'Ensino Fundamental I', alunos: 28, media: 8.9, freq: '97.2%', obs: 'Excelente adaptação e participação inicial.', materias: { 'L. Portuguesa': 9.0, 'Matemática': 8.8, 'Ciências': 9.1, 'História': 8.7 } },
+            { id: '2EF', nome: '2º Ano A', etapa: 'EFI', etapaNome: 'Ensino Fundamental I', alunos: 26, media: 8.6, freq: '96.5%', obs: 'Ótima evolução no processo de alfabetização.', materias: { 'L. Portuguesa': 8.5, 'Matemática': 8.7, 'Ciências': 8.8, 'História': 8.4 } },
+            { id: '3EF', nome: '3º Ano A', etapa: 'EFI', etapaNome: 'Ensino Fundamental I', alunos: 27, media: 8.4, freq: '95.8%', obs: 'Desempenho constante e bom engajamento nas tarefas.', materias: { 'L. Portuguesa': 8.3, 'Matemática': 8.5, 'Ciências': 8.6, 'História': 8.2 } },
+            { id: '4EF', nome: '4º Ano A', etapa: 'EFI', etapaNome: 'Ensino Fundamental I', alunos: 25, media: 8.1, freq: '94.9%', obs: 'Requer acompanhamento na fixação de operações matemáticas.', materias: { 'L. Portuguesa': 8.2, 'Matemática': 7.8, 'Ciências': 8.4, 'História': 8.0 } },
+            { id: '5EF', nome: '5º Ano A', etapa: 'EFI', etapaNome: 'Ensino Fundamental I', alunos: 30, media: 8.3, freq: '96.1%', obs: 'Boa transição para a conclusão do Fundamental I.', materias: { 'L. Portuguesa': 8.4, 'Matemática': 8.1, 'Ciências': 8.5, 'História': 8.2 } },
+
+            // Ensino Fundamental II
+            { id: '6EF', nome: '6º Ano A', etapa: 'EFII', etapaNome: 'Ensino Fundamental II', alunos: 32, media: 7.9, freq: '94.2%', obs: 'Fase de adaptação aos múltiplos professores.', materias: { 'L. Portuguesa': 8.0, 'Matemática': 7.5, 'História': 8.1, 'Física/Ciências': 8.0 } },
+            { id: '7EF', nome: '7º Ano B', etapa: 'EFII', etapaNome: 'Ensino Fundamental II', alunos: 29, media: 7.2, freq: '92.8%', obs: 'Atenção especial em Matemática e Redação.', materias: { 'L. Portuguesa': 7.1, 'Matemática': 6.8, 'História': 7.5, 'Física/Ciências': 7.4 } },
+            { id: '8EF', nome: '8º Ano A', etapa: 'EFII', etapaNome: 'Ensino Fundamental II', alunos: 31, media: 8.0, freq: '95.1%', obs: 'Turma participativa e com rendimento estável.', materias: { 'L. Portuguesa': 8.2, 'Matemática': 7.8, 'História': 8.3, 'Física/Ciências': 7.7 } },
+            { id: '9A',  nome: '9º Ano A', etapa: 'EFII', etapaNome: 'Ensino Fundamental II', alunos: 30, media: 8.8, freq: '96.5%', obs: 'Excelente engajamento e alta taxa de assiduidade.', materias: { 'L. Portuguesa': 8.8, 'Matemática': 9.0, 'História': 9.5, 'Física': 8.2, 'Inglês': 9.2 } },
+            { id: '9B',  nome: '9º Ano B', etapa: 'EFII', etapaNome: 'Ensino Fundamental II', alunos: 28, media: 8.5, freq: '95.7%', obs: 'Ótimo aproveitamento geral nas avaliações.', materias: { 'L. Portuguesa': 9.0, 'Matemática': 8.2, 'História': 8.8, 'Física': 8.1, 'Inglês': 8.9 } },
+
+            // Ensino Médio
+            { id: '1EM', nome: '1º Ano EM', etapa: 'EM', etapaNome: 'Ensino Médio', alunos: 34, media: 8.2, freq: '95.0%', obs: 'Boa imersão nas disciplinas do Novo Ensino Médio.', materias: { 'L. Portuguesa': 8.3, 'Matemática': 8.0, 'História': 8.5, 'Física': 8.1 } },
+            { id: '2EM', nome: '2º Ano EM', etapa: 'EM', etapaNome: 'Ensino Médio', alunos: 33, media: 8.6, freq: '96.2%', obs: 'Foco elevado em exames simulados e tutoria IA.', materias: { 'L. Portuguesa': 8.7, 'Matemática': 8.5, 'História': 8.8, 'Física': 8.4 } },
+            { id: '3A',  nome: '3º Ano A EM', etapa: 'EM', etapaNome: 'Ensino Médio', alunos: 35, media: 9.2, freq: '98.5%', obs: 'Destaque acadêmico máximo. Preparação intensiva para vestibulares.', materias: { 'L. Portuguesa': 9.4, 'Matemática': 9.5, 'História': 9.0, 'Física': 9.1, 'Inglês': 9.6 } }
+        ];
+
+        let filtroEtapaAtiva = 'todas';
+        let turmaSelecionadaObj = dadosEscola.find(t => t.id === '9A') || dadosEscola[0];
+        let instGraficoChart = null;
+
+        window.onload = function () {
+            renderizarGrafico();
+            atualizarDashboardGeral();
+        };
+
+        // Drawer
+        function abrirAba() {
+            document.getElementById("abaLateral").classList.add("aberta");
+            document.getElementById("overlay").classList.add("ativo");
+        }
+
+        function fecharAba() {
+            document.getElementById("abaLateral").classList.remove("aberta");
+            document.getElementById("overlay").classList.remove("ativo");
+        }
+
+        // Filtro por Etapa
+        function filtrarEtapa(etapa) {
+            filtroEtapaAtiva = etapa;
+
+            // Atualiza botões
+            ['btnEtapaTodas', 'btnEtapaEFI', 'btnEtapaEFII', 'btnEtapaEM'].forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-primary transition";
+                }
+            });
+
+            if (etapa === 'todas') document.getElementById('btnEtapaTodas').className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs bg-primary text-white";
+            if (etapa === 'EFI') document.getElementById('btnEtapaEFI').className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs bg-primary text-white";
+            if (etapa === 'EFII') document.getElementById('btnEtapaEFII').className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs bg-primary text-white";
+            if (etapa === 'EM') document.getElementById('btnEtapaEM').className = "px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs bg-primary text-white";
+
+            atualizarDashboardGeral();
+        }
+
+        // Obter Dados Filtrados
+        function obterDadosFiltrados() {
+            if (filtroEtapaAtiva === 'todas') return dadosEscola;
+            return dadosEscola.filter(t => t.etapa === filtroEtapaAtiva);
+        }
+
+        // Atualização Geral da Tela (KPIs, Gráfico e Tabela)
+        function atualizarDashboardGeral() {
+            const turmas = obterDadosFiltrados();
+
+            // Recalcular KPIs
+            if (turmas.length > 0) {
+                const somaMedias = turmas.reduce((acc, t) => acc + t.media, 0);
+                const mediaGeral = (somaMedias / turmas.length).toFixed(1);
+
+                // Maior Média
+                const maiorT = [...turmas].sort((a, b) => b.media - a.media)[0];
+                // Menor Média
+                const menorT = [...turmas].sort((a, b) => a.media - b.media)[0];
+
+                document.getElementById('kpiMediaGeral').innerText = mediaGeral;
+                document.getElementById('kpiMaiorMediaTurma').innerText = maiorT.nome;
+                document.getElementById('kpiMaiorMediaValor').innerText = `Nota Média: ${maiorT.media.toFixed(1)} / 10.0`;
+                document.getElementById('kpiMenorMediaTurma').innerText = menorT.nome;
+                document.getElementById('kpiMenorMediaValor').innerText = `Nota Média: ${menorT.media.toFixed(1)} / 10.0`;
+
+                // Garante que a turma selecionada no painel direito existe no filtro atual
+                if (!turmas.some(t => t.id === turmaSelecionadaObj.id)) {
+                    turmaSelecionadaObj = turmas[0];
+                }
+            }
+
+            atualizarGraficoChart(turmas);
+            atualizarPainelDetalhes(turmaSelecionadaObj);
+            atualizarTabelaComparativa(turmas);
+        }
+
+        // Renderização / Atualização do Chart.js
+        function renderizarGrafico() {
+            const ctx = document.getElementById('graficoDesempenhoTurmas').getContext('2d');
+            const turmas = obterDadosFiltrados();
+
+            const labels = turmas.map(t => t.nome);
+            const dataValores = turmas.map(t => t.media);
+            const coresBarras = turmas.map(t => t.id === turmaSelecionadaObj.id ? '#c0576f' : '#8daec3');
+
+            instGraficoChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nota Média da Turma',
+                        data: dataValores,
+                        backgroundColor: coresBarras,
+                        hoverBackgroundColor: '#a8485e',
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Média: ${context.raw} / 10.0`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 5.0,
+                            max: 10.0,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                font: { family: 'Plus Jakarta Sans', size: 11 },
+                                color: '#64748b'
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' },
+                                color: '#334155'
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const turmasAtuais = obterDadosFiltrados();
+                            const turmaClicada = turmasAtuais[index];
+                            if (turmaClicada) {
+                                selecionarTurmaParaDetalhes(turmaClicada.id);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function atualizarGraficoChart(turmas) {
+            if (!instGraficoChart) return;
+
+            instGraficoChart.data.labels = turmas.map(t => t.nome);
+            instGraficoChart.data.datasets[0].data = turmas.map(t => t.media);
+            instGraficoChart.data.datasets[0].backgroundColor = turmas.map(t => t.id === turmaSelecionadaObj.id ? '#c0576f' : '#8daec3');
+            instGraficoChart.update();
+        }
+
+        // Seleção de Turma para o Card Lateral
+        function selecionarTurmaParaDetalhes(turmaId) {
+            const t = dadosEscola.find(x => x.id === turmaId);
+            if (t) {
+                turmaSelecionadaObj = t;
+                atualizarPainelDetalhes(t);
+
+                // Destaca no gráfico a barra selecionada
+                const turmasAtuais = obterDadosFiltrados();
+                if (instGraficoChart) {
+                    instGraficoChart.data.datasets[0].backgroundColor = turmasAtuais.map(x => x.id === t.id ? '#c0576f' : '#8daec3');
+                    instGraficoChart.update();
+                }
+            }
+        }
+
+        // Atualizar Card de Detalhamento Lateral
+        function atualizarPainelDetalhes(turma) {
+            document.getElementById('detalheTurmaNome').innerText = turma.nome;
+            document.getElementById('detalheTurmaMedia').innerText = turma.media.toFixed(1);
+            document.getElementById('detalheTurmaFreq').innerText = turma.freq;
+            document.getElementById('detalheTurmaObs').innerText = `"${turma.obs}"`;
+
+            // Badge de status
+            const badge = document.getElementById('detalheTurmaBadge');
+            if (turma.media >= 8.5) {
+                badge.className = "text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full";
+                badge.innerText = "Desempenho Alto";
+            } else if (turma.media >= 7.8) {
+                badge.className = "text-[10px] font-bold bg-teal-100 text-teal-800 px-2.5 py-1 rounded-full";
+                badge.innerText = "Desempenho Normal";
+            } else {
+                badge.className = "text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full";
+                badge.innerText = "Atenção Pedagógica";
+            }
+
+            // Gerar Barras de Disciplina
+            const containerMaterias = document.getElementById('containerMateriasDetalhes');
+            containerMaterias.innerHTML = '';
+
+            for (const [materia, nota] of Object.entries(turma.materias)) {
+                const perc = (nota / 10) * 100;
+                const corBarra = nota >= 8.0 ? 'bg-primary' : 'bg-amber-500';
+
+                const div = document.createElement('div');
+                div.className = "space-y-1";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center text-slate-700">
+                        <span class="font-medium">${materia}</span>
+                        <strong class="${nota >= 8.0 ? 'text-primary' : 'text-amber-600'}">${nota.toFixed(1)}</strong>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="${corBarra} h-full rounded-full transition-all duration-500" style="width: ${perc}%"></div>
+                    </div>
+                `;
+                containerMaterias.appendChild(div);
+            }
+        }
+
+        // Preencher Tabela Comparativa Inferior
+        function atualizarTabelaComparativa(turmas) {
+            const tbody = document.getElementById('tbodyTurmasComparativo');
+            const countEl = document.getElementById('countTurmasTabela');
+
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            countEl.innerText = turmas.length;
+
+            turmas.forEach(t => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-rose-50/40 transition cursor-pointer";
+                tr.onclick = () => selecionarTurmaParaDetalhes(t.id);
+
+                let badgeCor = "bg-teal-100 text-teal-800";
+                let badgeTexto = "Satisfatório";
+
+                if (t.media >= 8.5) {
+                    badgeCor = "bg-emerald-100 text-emerald-800";
+                    badgeTexto = "Destaque";
+                } else if (t.media < 7.8) {
+                    badgeCor = "bg-amber-100 text-amber-800";
+                    badgeTexto = "Apoio Necessário";
+                }
+
+                tr.innerHTML = `
+                    <td class="p-3">
+                        <div class="font-bold text-slate-800">${t.nome}</div>
+                        <div class="text-[10px] text-slate-400">ID: ${t.id}</div>
+                    </td>
+                    <td class="p-3 text-slate-600 font-medium">${t.etapaNome}</td>
+                    <td class="p-3 text-center font-semibold text-slate-700">${t.alunos} alunos</td>
+                    <td class="p-3 text-center font-extrabold text-primary text-sm">${t.media.toFixed(1)}</td>
+                    <td class="p-3 text-center font-semibold text-teal-800">${t.freq}</td>
+                    <td class="p-3 text-center">
+                        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${badgeCor}">${badgeTexto}</span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="selecionarTurmaParaDetalhes('${t.id}')" class="text-primary hover:text-rose-800 font-bold text-[11px] bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">
+                            <i class="fa-solid fa-chart-line mr-1"></i> Analisar
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+
+</html>
